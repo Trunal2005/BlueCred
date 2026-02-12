@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { calculateHash } from '@/lib/blockchain'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
     try {
         const user = await getUserFromRequest(req)
