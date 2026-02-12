@@ -17,6 +17,22 @@ export async function POST(req: NextRequest) {
         })
 
         if (!user) {
+            // FALLBACK FOR VERCEL DEMO (If DB is empty/missing)
+            if (password === 'password123') {
+                const demoUsers = {
+                    'admin@bluecred.io': { id: 'demo-admin', name: 'Admin User', role: 'ADMIN' },
+                    'ngo@earth.org': { id: 'demo-ngo', name: 'Green Earth NGO', role: 'NGO' },
+                    'buyer@corp.com': { id: 'demo-buyer', name: 'Eco Corp', role: 'BUYER' }
+                }
+                const demoUser = demoUsers[email as keyof typeof demoUsers]
+                if (demoUser) {
+                    const token = signToken({ userId: demoUser.id, role: demoUser.role })
+                    return NextResponse.json({
+                        token,
+                        user: { ...demoUser, email }
+                    })
+                }
+            }
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
         }
 

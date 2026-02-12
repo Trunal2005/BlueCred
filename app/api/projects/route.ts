@@ -76,6 +76,43 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'desc' }
         })
 
+        // DEMO FALLBACK: If no projects found, return mock data
+        if (projects.length === 0) {
+            const mockProjects = [
+                {
+                    id: 'demo-p1',
+                    name: 'Sundarbans Mangrove Restoration',
+                    location: 'Sundarbans, India',
+                    ecosystem: 'Mangrove',
+                    area: 500.5,
+                    description: 'Restoration of 500 hectares of degraded mangrove forest in the Sundarbans delta. This project aims to sequester carbon and protect local biodiversity.',
+                    status: 'VERIFIED',
+                    owner: { name: 'Green Earth NGO' },
+                    aiReport: {
+                        verificationScore: 95.5,
+                        riskLevel: 'LOW',
+                        summary: 'Satellite analysis confirms healthy mangrove density. Biomass estimation correlates with reported area.'
+                    }
+                },
+                {
+                    id: 'demo-p2',
+                    name: 'Blue Lagoon Seagrass Project',
+                    location: 'Bali, Indonesia',
+                    ecosystem: 'Seagrass',
+                    area: 120.0,
+                    description: 'Protection of seagrass meadows in the coastal waters of Bali. Crucial for marine life and carbon storage.',
+                    status: 'PENDING',
+                    owner: { name: 'Green Earth NGO' },
+                    aiReport: {
+                        verificationScore: 82.0,
+                        riskLevel: 'MEDIUM',
+                        summary: 'Seagrass beds visible but some water turbidity interferes with precise density calculation.'
+                    }
+                }
+            ]
+            return NextResponse.json(mockProjects)
+        }
+
         return NextResponse.json(projects)
     } catch (error) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
