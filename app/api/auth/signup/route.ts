@@ -4,24 +4,34 @@ import bcrypt from 'bcrypt'
 import { signToken } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
+    let body;
     try {
-        const body = await req.json()
-        const { name, email, password, role } = body
+        body = await req.json();
+    } catch (error) {
+        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-        if (!name || !email || !password) {
-            return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
-        }
+    const { name, email, password, role } = body;
 
+    // Basic Validation
+    if (!name || !email || !password) {
+        return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    try {
+        // Check existing user
         const existingUser = await prisma.user.findUnique({
             where: { email },
-        })
+        });
 
         if (existingUser) {
-            return NextResponse.json({ error: 'User already exists' }, { status: 409 })
+            return NextResponse.json({ error: 'User already exists' }, { status: 409 });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10)
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create User
         const user = await prisma.user.create({
             data: {
                 name,
@@ -29,33 +39,35 @@ export async function POST(req: NextRequest) {
                 password: hashedPassword,
                 role: role || 'COMMUNITY', // Default role
             },
-        })
+        });
 
-        const token = signToken({ userId: user.id, role: user.role })
+        // Generate Token
+        const token = signToken({ userId: user.id, role: user.role });
 
         return NextResponse.json({
             token,
             user: { id: user.id, name: user.name, email: user.email, role: user.role },
-        })
+        });
+
     } catch (error) {
-        console.error('Signup error:', error)
+        console.error('Signup error:', error);
 
-        // DEMO FALLBACK: If DB write fails (likely Vercel Read-Only), return success mock
-        // This allows the user to "experience" the signup flow even if data isn't saved.
-        const body = await req.json().catch(() => ({}))
-        const { name, email, role } = body
-
+        // DEMO FALLBACK: If DB write fails (Likely Netlify/Vercel Read-Only)
+        // We use the variables parsed at the start of the function
         if (name && email) {
-            console.log("Activating Demo Signup Fallback for:", email)
-            const demoId = `demo-user-${Date.now()}`
-            const token = signToken({ userId: demoId, role: role || 'COMMUNITY' })
+            console.log("Activating Demo Signup Fallback for:", email);
+            const demoId = `demo-user-${Date.now()}`;
+            // Use 'COMMUNITY' as default role for fallbacks
+            const fallbackRole = role || 'COMMUNITY';
+
+            const token = signToken({ userId: demoId, role: fallbackRole });
 
             return NextResponse.json({
                 token,
-                user: { id: demoId, name, email, role: role || 'COMMUNITY' },
-            })
+                user: { id: demoId, name, email, role: fallbackRole },
+            });
         }
 
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
